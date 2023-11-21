@@ -19,7 +19,19 @@ O teste ADT é um unit root test que verifica se a null hypothesis é verdadeira
 
 (Figure 1: Example of stationarity in time-series)
 
+A powerfull tool to study the time evolution of a time-series is the seasonal decomposition. In general, this kind of study decomposes the data, y(t), into differents components: the trend T(t) representing the growing or decreasing of the series, the cyclical component C(t) representing repeated but non-periodic variations, the seasonal component S(t) representing periodic variations and the irregular component I(t) or the noise. In its additive formulation, the decomposition takes the following form:
+
+$$ y(t)=T(t)+C(t)+S(t)+I(t) $$
+
 ### SARIMAX
+
+ARIMA (AutoRegressive Integrated Moving Average) is a model which takes as input a non-seasonal time-series alongside with parameters p, d, q, integers greater or equal to 0, to make predictions. The parameter p represents the number of lagged observations, d the number of differentiations needed to turn the series stationary and q the moving average order. While ARIMA delivers good results, it's limited to non-periodic data.
+
+In other hand, SARIMAX (Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors) is considered an improvement of ARIMA used to fit and make predictions for non-stationary series. Alongside to the (p,d,q) parameters, it takes also (P,D,Q,m) parameters related to the seasonality, where m stands for the number of periods in each season.
+
+The optimal parameters for an individual model can be found by using statistical estimators, such as the AIC (Akaike Information Criterion). When a model is used to represent the process that generated the observed data, the representation will never be exact and some information will be lost; the AIC estimator is proportional to this loss and minimizing it means to find the model that best represents the dataset and thus is able to make the best predictions.
+
+We are going to use the AIC estimator to obtain the parameters (p,d,q)x(P,D,Q,m) that optimizes the forecasting ability of our SARIMAX model.
 
 ## The dataset
 
@@ -34,20 +46,25 @@ We study here only data for Brazil's land temperature starting from 1832 and goi
 
 Após limpar o conjunto de dados e eliminar os valores nulos, iniciamos a análise determinando se a série temporal é estacionária através da visualização da rolling mean/std and ADF test (Figure 3). O resultado do teste ADF foi:
 
-Test stat               -3.439203
-p-value                  0.009693
-#lags used              26.000000
-#observations used    2154.000000
-dtype: float64
-criticality at 1% : -3.4333895125643408
-criticality at 5% : -2.86288274571734
-criticality at 10% : -2.567484811553121
+Test statistics: -3.439203
+
+p-value: 0.009693
+
+Number of lags used: 26
+
+Number of observations used: 2154
+
+Criticality at 1% : -3.4333895125643408
+
+Criticality at 5% : -2.86288274571734
+
+Criticality at 10% : -2.567484811553121
 
 ![figure3](https://github.com/rafael-raiser/portolio_time-series/blob/main/images/test_stationarity.png)
 
 (Figure 3: Rolling mean and standard deviation)
 
-Embora seja possível identificar uma sutil tendência de aumento da temperatura média com o tempo, o que poderia indicar uma série com média não estacionária, o teste não foi capaz de reconhecê-la e seu resultado indica uma série estacionária, com p-value=0.009<0.05 e estatística aproximadamente igual ao valor crítico a 1% de tolerância.
+Embora seja possível identificar uma sutil tendência de aumento da temperatura média com o tempo, o que poderia indicar uma série com média não estacionária, o teste não foi capaz de reconhecê-la e seu resultado indica uma série estacionária, com p-value menor que o critério de 0.05 e estatística aproximadamente igual ao valor crítico a 1% de tolerância.
 
 Esta tendência de crescimento da média também fica visível na seasonal decomposition (Figure 4).
 
@@ -55,30 +72,21 @@ Esta tendência de crescimento da média também fica visível na seasonal decom
 
 (Figure 4: Seasonal decomposition)
 
-A próxima etapa foi a aplicação do método SARIMAX. Inicialmente, buscamos uma combinação de parâmetros pdq e seasonal-pdq que otimizassem o resultado, minimizando o índice AIC. Encontramos os parâmetros (1, 0, 1)x(0, 1, 1, 12) com AIC=2162.6.
-
-Utilizando estes parâmetros, obtivemos os seguintes resultados:
-
-==============================================================================
-                 coef    std err          z      P>|z|      [0.025      0.975]
-------------------------------------------------------------------------------
-ar.L1          0.8297      0.017     47.704      0.000       0.796       0.864
-ma.L1         -0.4401      0.028    -15.709      0.000      -0.495      -0.385
-ma.S.L12      -0.9199      0.009    -99.934      0.000      -0.938      -0.902
-sigma2         0.1580      0.004     42.899      0.000       0.151       0.165
-==============================================================================
+A próxima etapa foi a aplicação do método SARIMAX. Inicialmente, buscamos uma combinação de parâmetros (p,d,q)x(P,D,Q,m=12) que otimizassem o resultado, minimizando o índice AIC. Encontramos os parâmetros (1, 0, 1)x(0, 1, 1, 12) com AIC=2162.6.
 
 Figure 5 shows a good agreement between SARIMAX forecast and the observed value for years after 2010.
 
 ![figure5](https://github.com/rafael-raiser/portolio_time-series/blob/main/images/sarimax_observed_vs_results.png)
 
-(Figure 5: Comparison between SARIMAX forecast and observed values)
+(Figure 6: Comparison between SARIMAX forecast and observed values)
+
+The next step was to optain a long-term estimation of averages temperatures. We applied our model up to year 2030 (200 months after 2013) and the results along with the confidence intervals are plotted in Figure 6.
 
 ![figure6](https://github.com/rafael-raiser/portolio_time-series/blob/main/images/sarimax_forecast.png)
 
 (Figure 6: SARIMAX forecast for 200 months)
 
-We performed simple linear regression on data after 1990 in order to capture the growing tendency of the average temperature and to make a prediction for year 2050. We obtain this way that 
+Finally, in order to catch the growing in average temperatures starting from the middle of the 20st century (as we can see in the trend evolution of Figure 4) and to make a prediction for year 2050, we performed a linear regression over. This resulted in an average temperature of 26.1 °C for that year (Figure 7).
 
 ![figure7](https://github.com/rafael-raiser/portolio_time-series/blob/main/images/average_linearfit.png)
 
